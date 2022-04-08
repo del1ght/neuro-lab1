@@ -10,8 +10,6 @@
           canvasId="VueCanvasDrawing"
           :width="width"
           :height="height"
-          backgroundColor="#fff0"
-          :background-image="backgroundImage"
           :lineWidth="line"
           saveAs="png"
           :styles="{
@@ -23,6 +21,12 @@
       <v-sheet class="my-2">
         <div class="mr-4">
           <v-btn color="primary" @click="$refs.VueCanvasDrawing.reset();" class="mr-2"><v-icon>mdi-eraser</v-icon></v-btn>
+        </div>
+        <div class="mt-2">
+          <v-btn color="primary" @click="imageData(width, height)">Парсинг картинки</v-btn>
+        </div>
+        <div class="mt-2">
+          <v-btn color="primary" @click="initWeights(width, numberOfNeurons, 0.3, -0.3)">Инициализация весов</v-btn>
         </div>
         <!-- <div class="mr-4 my-2">
           <v-btn color="primary" @click="setCross(); recalculateWeights()" class="mr-2">Крестик </v-btn>
@@ -52,11 +56,13 @@ export default {
 
   data: () => ({
     image: "",
-    width: 150,
-    height: 150,
-    line: 25,
+    width: 50,
+    height: 50,
+    line: 5,
     imageArray: null,
-    backgroundImage: null,
+    weightMatrix: [],
+    numberOfNeurons: 10,
+    learnSpeed: 0.3
   }),
 
   methods: {
@@ -88,10 +94,10 @@ export default {
         reader.onload = (e) => {
           let img = new Image();
           img.onload = () => {
-            this.width = img.width;
-            this.height = img.height;
+            // this.width = img.width;
+            // this.height = img.height;
             ctx.drawImage(img, 0, 0);
-
+            this.imageData(this.width, this.height)
             resolve();
           };
           img.src = e.target.result;
@@ -100,34 +106,41 @@ export default {
       })
   );
       await Promise.all(promise);
-      console.log()
 
     },
 
-    // async setImage(event, numberOfFiles) {
-    //   for (let i = 0; i < numberOfFiles.length; i++) {
-    //     this.backgroundImage = URL.createObjectURL(event.target.files[i]);
-    //     console.log(this.backgroundImage)
-    //     await this.$refs.VueCanvasDrawing.redraw();
-    //   }
-    // },
 
     imageData(width, height){
       let context = document.getElementById('VueCanvasDrawing').getContext('2d').getImageData(0, 0, width, height).data
       let array = Array.from(context)
-      array.splice(0,3)
       let newArray = array.filter((_,i) => i % 4 == 0)
       for (let i = 0; i < newArray.length; i++) {
-        if (newArray[i] > 0){
-          newArray[i] = 1
+        if (newArray[i] == 255){
+          newArray[i] = 0
         }
+        else newArray[i] = 1
       }
       console.log(newArray)
       return newArray
     },
 
-    async resetBg(){
-      this.backgroundImage = null
+    initWeights(canvasSize, numberOfNeurons, max, min){
+      let weightRes = []
+      for (let i = 0; i < numberOfNeurons; i++) {
+        let weights = [];
+        for (let j = 0; j < canvasSize ** 2; j++) {
+          let randomNumber = Math.random() * (max - min) + min
+          weights.push(randomNumber)
+        }
+        weightRes.push(weights)
+      }
+      this.weightMatrix = weightRes
+      console.log(this.weightMatrix)
+    },
+
+    initWeightsOnBtn(){
+      this.initWeights(this.width ** 2, this.numberOfNeurons, 0.3, -0.3)
+      console.log(this.weightMatrix)
     }
   }
 }
