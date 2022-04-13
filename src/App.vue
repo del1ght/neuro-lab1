@@ -27,7 +27,7 @@
           >
         </div>
         <div class="mt-2">
-          <v-btn color="primary">Угадать</v-btn>
+          <v-btn color="primary" @click="recognize">Угадать</v-btn>
         </div>
         <!-- <div class="mr-4 my-2">
           <v-btn color="primary" @click="setCross(); recalculateWeights()" class="mr-2">Крестик </v-btn>
@@ -57,6 +57,7 @@
 
 <script>
 import VueDrawingCanvas from "vue-drawing-canvas";
+import { indexOf } from "lodash";
 var _ = require("lodash");
 export default {
   name: "App",
@@ -66,15 +67,15 @@ export default {
 
   data: () => ({
     image: "",
-    width: 50,
-    height: 50,
-    line: 5,
+    width: 100,
+    height: 100,
+    line: 8,
     imageArray: null,
     weightMatrix: [],
     numberOfNeurons: 10,
-    learnSpeed: 0.3,
+    learnSpeed: 0.1,
     errors: 0,
-    thresholdError: 0.1,
+    thresholdError: 0.05,
   }),
 
   methods: {
@@ -138,7 +139,7 @@ export default {
         console.log(percentCorrect);
       } while (percentCorrect < 100);
 
-      console.log("finish");
+      console.log("Обучение завершено");
       this.$refs.VueCanvasDrawing.reset();
       console.table([
         ["Прошло эпох", epoch],
@@ -158,14 +159,10 @@ export default {
 
         let sumError = 0;
         for (let j = 0, outputLen = neuronOutput.length; j < outputLen; j++) {
-          const error = Math.pow(
-            neuronOutput[j] - vectorsAndAnswers[i].answer[j],
-            2
-          );
+          const error = neuronOutput[j] - vectorsAndAnswers[i].answer[j];
           sumError += error;
         }
-
-        if (sumError < this.thresholdError) correctCount++;
+        if (sumError == 0) correctCount++;
       }
       console.log(vectorsAndAnswers.length - correctCount + " ошибок");
       this.errors += vectorsAndAnswers.length - correctCount;
@@ -173,6 +170,7 @@ export default {
       return correctPercent;
     },
 
+    // Расчет дельты и корректировка весов
     Train(vector, correctAnswers) {
       let answer = this.Predict(vector);
 
@@ -189,13 +187,13 @@ export default {
           j++
         ) {
           if (vector[j] === 1) {
-            this.weightMatrix[i][j] +=
-              this.learnSpeed * weightsDelta * vector[j];
+            this.weightMatrix[i][j] += this.learnSpeed * weightsDelta;
           }
         }
       }
     },
 
+    // Сумматор + функция активации
     Predict(vector) {
       let neuronSums = [];
 
@@ -215,7 +213,6 @@ export default {
 
         neuronSums.push(this.threshold(sum));
       }
-
       return neuronSums;
     },
 
@@ -235,7 +232,6 @@ export default {
           newArray[i] = 0;
         } else newArray[i] = 1;
       }
-      // console.log(newArray)
       return newArray;
     },
 
@@ -250,7 +246,14 @@ export default {
         weightRes.push(weights);
       }
       this.weightMatrix = weightRes;
-      console.log(this.weightMatrix);
+    },
+
+    recognize() {
+      let imageVector = this.Predict(this.imageData(this.width, this.height));
+      if (!imageVector.includes(1)) return alert("Не распознано");
+      console.log(imageVector);
+      let max = Math.max(...imageVector);
+      alert(imageVector.indexOf(max));
     },
   },
 
