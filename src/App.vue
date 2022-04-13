@@ -72,7 +72,7 @@ export default {
     imageArray: null,
     weightMatrix: [],
     numberOfNeurons: 10,
-    learnSpeed: 0.001,
+    learnSpeed: 0.3,
     errors: 0,
     thresholdError: 0.1,
   }),
@@ -145,36 +145,6 @@ export default {
         ["Всего образов", vectorsAndAnswer.length],
         ["Всего ошибок", this.errors],
       ]);
-    },
-
-    imageData(width, height) {
-      let context = document
-        .getElementById("VueCanvasDrawing")
-        .getContext("2d")
-        .getImageData(0, 0, width, height).data;
-      let array = Array.from(context);
-      let newArray = array.filter((_, i) => i % 4 == 0);
-      for (let i = 0; i < newArray.length; i++) {
-        if (newArray[i] == 255) {
-          newArray[i] = 0;
-        } else newArray[i] = 1;
-      }
-      // console.log(newArray)
-      return newArray;
-    },
-
-    initWeights(canvasSize, numberOfNeurons, max, min) {
-      let weightRes = [];
-      for (let i = 0; i < numberOfNeurons; i++) {
-        let weights = [];
-        for (let j = 0; j < canvasSize ** 2; j++) {
-          let randomNumber = Math.random() * (max - min) + min;
-          weights.push(randomNumber);
-        }
-        weightRes.push(weights);
-      }
-      this.weightMatrix = weightRes;
-      console.log(this.weightMatrix);
     },
 
     TrainDataset(vectorsAndAnswers) {
@@ -250,7 +220,37 @@ export default {
     },
 
     threshold(sum) {
-      return sum >= 0.9 ? 1 : 0;
+      return sum >= 0 ? 1 : 0;
+    },
+
+    imageData(width, height) {
+      let context = document
+        .getElementById("VueCanvasDrawing")
+        .getContext("2d")
+        .getImageData(0, 0, width, height).data;
+      let array = Array.from(context);
+      let newArray = array.filter((_, i) => i % 4 == 0);
+      for (let i = 0; i < newArray.length; i++) {
+        if (newArray[i] == 255) {
+          newArray[i] = 0;
+        } else newArray[i] = 1;
+      }
+      // console.log(newArray)
+      return newArray;
+    },
+
+    initWeights(canvasSize, numberOfNeurons, max, min) {
+      let weightRes = [];
+      for (let i = 0; i < numberOfNeurons; i++) {
+        let weights = [];
+        for (let j = 0; j < canvasSize ** 2; j++) {
+          let randomNumber = Math.random() * (max - min) + min;
+          weights.push(randomNumber);
+        }
+        weightRes.push(weights);
+      }
+      this.weightMatrix = weightRes;
+      console.log(this.weightMatrix);
     },
   },
 
