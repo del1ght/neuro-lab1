@@ -56,24 +56,24 @@
 </template>
 
 <script>
-import VueDrawingCanvas from "vue-drawing-canvas";
-import { indexOf } from "lodash";
-var _ = require("lodash");
+import VueDrawingCanvas from 'vue-drawing-canvas';
+import { indexOf } from 'lodash';
+var _ = require('lodash');
 export default {
-  name: "App",
+  name: 'App',
   components: {
     VueDrawingCanvas,
   },
 
   data: () => ({
-    image: "",
+    image: '',
     width: 100,
     height: 100,
     line: 8,
     imageArray: null,
     weightMatrix: [],
     numberOfNeurons: 10,
-    learnSpeed: 0.1,
+    learnSpeed: 0.4,
     errors: 0,
     thresholdError: 0.05,
   }),
@@ -92,7 +92,7 @@ export default {
     },
 
     async loadDataset(e) {
-      let ctx = document.getElementById("VueCanvasDrawing").getContext("2d");
+      let ctx = document.getElementById('VueCanvasDrawing').getContext('2d');
       let files = e.target.files;
       files = Object.values(files);
       files = this.shuffle(files);
@@ -139,12 +139,12 @@ export default {
         console.log(percentCorrect);
       } while (percentCorrect < 100);
 
-      console.log("Обучение завершено");
+      console.log('Обучение завершено');
       this.$refs.VueCanvasDrawing.reset();
       console.table([
-        ["Прошло эпох", epoch],
-        ["Всего образов", vectorsAndAnswer.length],
-        ["Всего ошибок", this.errors],
+        ['Прошло эпох', epoch],
+        ['Всего образов', vectorsAndAnswer.length],
+        ['Всего ошибок', this.errors],
       ]);
     },
 
@@ -155,7 +155,7 @@ export default {
       let correctCount = 0;
 
       for (let i = 0, arrLen = vectorsAndAnswers.length; i < arrLen; i++) {
-        let neuronOutput = this.Predict(vectorsAndAnswers[i].vector);
+        let neuronOutput = this.Predict(vectorsAndAnswers[i].vector, true);
 
         let sumError = 0;
         for (let j = 0, outputLen = neuronOutput.length; j < outputLen; j++) {
@@ -164,7 +164,7 @@ export default {
         }
         if (sumError == 0) correctCount++;
       }
-      console.log(vectorsAndAnswers.length - correctCount + " ошибок");
+      console.log(vectorsAndAnswers.length - correctCount + ' ошибок');
       this.errors += vectorsAndAnswers.length - correctCount;
       let correctPercent = (correctCount / vectorsAndAnswers.length) * 100;
       return correctPercent;
@@ -172,7 +172,7 @@ export default {
 
     // Расчет дельты и корректировка весов
     Train(vector, correctAnswers) {
-      let answer = this.Predict(vector);
+      let answer = this.Predict(vector, true);
 
       for (
         let i = 0, neuronLen = this.weightMatrix.length;
@@ -194,7 +194,7 @@ export default {
     },
 
     // Сумматор + функция активации
-    Predict(vector) {
+    Predict(vector, isLearning) {
       let neuronSums = [];
 
       for (
@@ -210,8 +210,9 @@ export default {
         ) {
           sum += vector[j] * this.weightMatrix[i][j];
         }
-
-        neuronSums.push(this.threshold(sum));
+        if (isLearning) {
+          neuronSums.push(this.threshold(sum));
+        } else neuronSums.push(sum);
       }
       return neuronSums;
     },
@@ -222,8 +223,8 @@ export default {
 
     imageData(width, height) {
       let context = document
-        .getElementById("VueCanvasDrawing")
-        .getContext("2d")
+        .getElementById('VueCanvasDrawing')
+        .getContext('2d')
         .getImageData(0, 0, width, height).data;
       let array = Array.from(context);
       let newArray = array.filter((_, i) => i % 4 == 0);
@@ -249,8 +250,11 @@ export default {
     },
 
     recognize() {
-      let imageVector = this.Predict(this.imageData(this.width, this.height));
-      if (!imageVector.includes(1)) return alert("Не распознано");
+      let imageVector = this.Predict(
+        this.imageData(this.width, this.height),
+        false
+      );
+      if (!imageVector.some((x) => x > 0)) return alert('Не распознано');
       console.log(imageVector);
       let max = Math.max(...imageVector);
       alert(imageVector.indexOf(max));
