@@ -2,7 +2,7 @@
   <v-app class="">
     <div class="pa-3">
       <v-sheet class="">
-        <h1 class="">Рисовалка</h1>
+        <h1 class="">Цифры</h1>
         <vue-drawing-canvas
           ref="VueCanvasDrawing"
           :image.sync="image"
@@ -29,13 +29,21 @@
         <div class="mt-2">
           <v-btn color="primary" @click="recognize">Угадать</v-btn>
         </div>
-        <!-- <div class="mr-4 my-2">
-          <v-btn color="primary" @click="setCross(); recalculateWeights()" class="mr-2">Крестик </v-btn>
-          <v-btn color="primary" @click="setCircle(); recalculateWeights()">Нолик</v-btn>
-        </div> -->
-        <!-- <div class="">
-          <v-btn color="primary" @click="save(weightMatrix)">Сохранить веса</v-btn>
-        </div> -->
+        <div class="mt-2">
+          <v-btn color="primary" @click="saveWeights()">Сохранить веса</v-btn>
+        </div>
+        <div class="mt-2">
+          <v-btn color="primary" @click="$refs.inputWeights.click()"
+            >Загрузить веса</v-btn
+          >
+          <input
+            v-show="false"
+            accept=""
+            ref="inputWeights"
+            type="file"
+            @change="(e) => loadWeights(e)"
+          />
+        </div>
         <div class="mt-2">
           <v-btn color="primary" @click="$refs.inputUpload.click()"
             >Загрузить датасет</v-btn
@@ -46,7 +54,6 @@
             v-show="false"
             ref="inputUpload"
             type="file"
-            id="load"
             @change="(e) => loadDataset(e)"
           />
         </div>
@@ -56,26 +63,24 @@
 </template>
 
 <script>
-import VueDrawingCanvas from 'vue-drawing-canvas';
-import { indexOf } from 'lodash';
-var _ = require('lodash');
+import VueDrawingCanvas from "vue-drawing-canvas";
+var _ = require("lodash");
 export default {
-  name: 'App',
+  name: "App",
   components: {
     VueDrawingCanvas,
   },
 
   data: () => ({
-    image: '',
+    image: "",
     width: 100,
     height: 100,
     line: 8,
     imageArray: null,
     weightMatrix: [],
     numberOfNeurons: 10,
-    learnSpeed: 0.4,
+    learnSpeed: 0.9,
     errors: 0,
-    thresholdError: 0.05,
   }),
 
   methods: {
@@ -93,12 +98,12 @@ export default {
 
     async loadDataset(e) {
       let t0 = performance.now();
-      let ctx = document.getElementById('VueCanvasDrawing').getContext('2d');
+      let ctx = document.getElementById("VueCanvasDrawing").getContext("2d");
       let files = e.target.files;
       files = Object.values(files);
       files = this.shuffle(files);
       let vectorsAndAnswer = [];
-      console.log(files);
+      // console.log(files);
 
       const promise = files.map(
         (file) =>
@@ -145,13 +150,13 @@ export default {
         return Number(res.toFixed(3));
       };
 
-      console.log('Обучение завершено');
+      console.log("Обучение завершено");
       this.$refs.VueCanvasDrawing.reset();
       console.table([
-        ['Прошло эпох', epoch],
-        ['Всего образов', vectorsAndAnswer.length],
-        ['Всего ошибок', this.errors],
-        ['Время обучения', getSeconds()],
+        ["Прошло эпох", epoch],
+        ["Всего образов", vectorsAndAnswer.length],
+        ["Всего ошибок", this.errors],
+        ["Время обучения", getSeconds()],
       ]);
     },
 
@@ -171,7 +176,7 @@ export default {
         }
         if (sumError == 0) correctCount++;
       }
-      console.log(vectorsAndAnswers.length - correctCount + ' ошибок');
+      console.log(vectorsAndAnswers.length - correctCount + " ошибок");
       this.errors += vectorsAndAnswers.length - correctCount;
       let correctPercent = (correctCount / vectorsAndAnswers.length) * 100;
       return correctPercent;
@@ -193,7 +198,7 @@ export default {
           j < weightsLen;
           j++
         ) {
-          if (vector[j] === 1) {
+          if (vector[j] === 1 && weightsDelta != 0) {
             this.weightMatrix[i][j] += this.learnSpeed * weightsDelta;
           }
         }
@@ -230,8 +235,8 @@ export default {
 
     imageData(width, height) {
       let context = document
-        .getElementById('VueCanvasDrawing')
-        .getContext('2d')
+        .getElementById("VueCanvasDrawing")
+        .getContext("2d")
         .getImageData(0, 0, width, height).data;
       let array = Array.from(context);
       let newArray = array.filter((_, i) => i % 4 == 0);
@@ -261,10 +266,41 @@ export default {
         this.imageData(this.width, this.height),
         false
       );
-      if (!imageVector.some((x) => x > 0)) return alert('Не распознано');
+      if (!imageVector.some((x) => x > 0)) return alert("Не распознано");
       console.log(imageVector);
       let max = Math.max(...imageVector);
       alert(imageVector.indexOf(max));
+    },
+
+    saveWeights() {
+      const a = document.createElement("a");
+      let data = JSON.stringify(this.weightMatrix);
+      const file = new Blob([data], { type: "application/json" });
+
+      a.href = URL.createObjectURL(file);
+      a.download = "weights.json";
+      a.click();
+
+      URL.revokeObjectURL(a.href);
+    },
+
+    loadWeights(e) {
+      const file = e.target.files[0];
+      let reader = new FileReader();
+      reader.readAsText(file);
+      let context = this;
+
+      reader.onload = function () {
+        let res = reader.result;
+        context.weightMatrix = JSON.parse(res);
+        console.log("Веса загружены");
+        console.log(context.weightMatrix);
+      };
+
+      reader.onerror = function () {
+        console.log(reader.error);
+        return;
+      };
     },
   },
 
