@@ -92,6 +92,7 @@ export default {
     },
 
     async loadDataset(e) {
+      let t0 = performance.now();
       let ctx = document.getElementById('VueCanvasDrawing').getContext('2d');
       let files = e.target.files;
       files = Object.values(files);
@@ -139,12 +140,18 @@ export default {
         console.log(percentCorrect);
       } while (percentCorrect < 100);
 
+      const getSeconds = () => {
+        let res = (performance.now() - t0) / 1000;
+        return Number(res.toFixed(3));
+      };
+
       console.log('Обучение завершено');
       this.$refs.VueCanvasDrawing.reset();
       console.table([
         ['Прошло эпох', epoch],
         ['Всего образов', vectorsAndAnswer.length],
         ['Всего ошибок', this.errors],
+        ['Время обучения', getSeconds()],
       ]);
     },
 
