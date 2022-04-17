@@ -79,7 +79,7 @@ export default {
     imageArray: null,
     weightMatrix: [],
     numberOfNeurons: 10,
-    learnSpeed: 0.9,
+    learnSpeed: 0.4,
     errors: 0,
   }),
 
